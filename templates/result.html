@@ -3,35 +3,35 @@
 
 <head>
     <meta charset="utf-8">
-
-        <title>Image analysis results</title>
+    <title>Image analysis results for {{ filename }}</title>
 </head>
 
 <body>
     <h1>Results for {{ filename }}</h1>
     <div class="card">
         <div class="card-body">
-            <p class="card-text">Age: {{ person['age'] }}</p>
-            <p class="card-text">Dominant emotion: {{ person['dominant_emotion'] }}</p>
-            <p class="card-text">Dominant gender: {{ person['dominant_gender'] }}</p>
-            <p class="card-text">Dominant race: {{ person['dominant_race'] }}</p>
+            <p class="card-text">Age: {{ age }}</p>
+            <p class="card-text">Dominant emotion: {{ main_em }}</p>
+            <p class="card-text">Dominant gender: {{ main_gender }}</p>
+            <p class="card-text">Dominant race: {{ main_race }}</p>
             <p class="card-text">Emotions found:</p>
             <ul class="list-group list-group-flush">
-                {% for emotion, value in person['emotion'].items() %}
-                <li class="list-group-item">{{ emotion|capitalize }}: {{ value }}</li>
+                {% for emotion, value in s_em.items() %}
+                <li class="list-group-item">{{ emotion|capitalize }}: {{ value }}%</li>
                 {% endfor %}
             </ul>
             <p class="card-text">Gender items found:</p>
             <ul class="list-group list-group-flush">
-                {% for gender, value in person['gender'].items() %}
+                {% for gender, value in s_gender.items() %}
                 <li class="list-group-item">{{ gender|title }}: {{ value }}%</li>
                 {% endfor %}
             </ul>
             <p class="card-text">Races found:</p>
             <ul class="list-group list-group-flush">
-                {% for race, value in person['race'].items() %}
+                {% for race, value in s_races.items() %}
                 <li class="list-group-item">{{ race|title }}: {{ value }}%</li>
                 {% endfor %}
+            </ul>
             </ul>
         </div>
     </div>
