@@ -1,5 +1,6 @@
 from deepface import DeepFace
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, make_response
+import filetype
 import os
 
 app = Flask(__name__)
@@ -10,21 +11,44 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    oops = request.cookies.get("OOPSIE", default=None)
+    fail = request.cookies.get("FAIL", default=None)
+
+    r = make_response(
+        render_template(
+            "index.html", warning=oops, fail=fail, uploaded=os.listdir("static/uploads")
+        )
+    )
+    r.delete_cookie("OOPSIE")
+    r.delete_cookie("FAIL")
+    return r
 
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    file = request.files["file"]
-    filename = file.filename
-    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-    return redirect(f"/analyze/{filename}")
+    if request.files["file"].filename != "":
+        file = request.files["file"]
+        filename = file.filename
+        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+        if not filetype.is_image(os.path.join(app.config["UPLOAD_FOLDER"], filename)):
+            resp = make_response(redirect("/"))
+            resp.set_cookie("FAIL", "This thing is not an image: " + filename)
+            os.remove(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            return resp
+        else:
+            return redirect(f"/analyze/{filename}")
+    else:
+        resp = make_response(redirect("/"))
+        resp.set_cookie("OOPSIE", "No file provided")
+        return resp
 
 
 @app.route("/analyze/<filename>")
 def show_info(filename):
     if not os.path.exists(os.path.join(app.config["UPLOAD_FOLDER"], filename)):
-        return "how did we get here?"
+        resp = make_response(redirect("/"))
+        resp.set_cookie("OOPSIE", "Seems like there's no file called: " + filename)
+        return resp
     else:
         try:
             person = DeepFace.analyze(
@@ -59,7 +83,6 @@ def show_info(filename):
             for k, v in sorted_genders.items():
                 likely_genders[k] = f"{v:.2f}"
 
-
             races = person["race"]  # dict
             sorted_races = {
                 k: v
@@ -84,7 +107,10 @@ def show_info(filename):
                 s_races=likely_races,
             )
         except Exception as e:
-            return "skill issue: " + str(e)
+            resp = make_response(redirect("/"))
+            resp.set_cookie("FAIL", "Some issue happened: " + str(e))
+            os.remove(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            return resp
 
 
 if __name__ == "__main__":

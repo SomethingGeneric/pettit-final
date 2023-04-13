@@ -1,2 +1,3 @@
 deepface
 flask[async]
+filetype
