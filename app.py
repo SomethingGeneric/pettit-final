@@ -4,6 +4,7 @@ import filetype
 import os
 import io
 import base64
+from datetime import datetime
 from PIL import Image
 
 app = Flask(__name__)
@@ -29,19 +30,15 @@ def index():
     r.delete_cookie("FAIL")
     return r
 
-n = 0
-
 @app.route('/stream', methods=['POST'])
 def lecamera():
     try:
-        global n
         # Get the frame from the request
         frame = request.json['frame'].replace("data:image/jpeg;base64,","")
         # Save the frame to disk or process it as needed
         img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
-        filename = f"static/uploads/camera/frame-{n}.jpg"
+        filename = f"static/uploads/camera/frame-{str(datetime.now())}.jpg"
         img.save(filename)
-        n += 1
         person = DeepFace.analyze(
             img_path=filename
         )[0]
@@ -98,7 +95,8 @@ def lecamera():
             s_races=likely_races,
         )
     except Exception as e:
-        return render_template("fail.html", fail=str(e))
+        #return render_template("fail.html", fail=str(e))
+        return f"FAIL: {str(e)}"
 
 @app.route("/camera")
 def camamammamammera():
