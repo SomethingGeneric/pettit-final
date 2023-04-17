@@ -195,6 +195,6 @@ def show_info(filename):
 
 if __name__ == "__main__":
     try:
-        app.run(debug=True)
+        app.run(host="0.0.0.0", debug=True)
     except Exception as e:
         print(str(e))
