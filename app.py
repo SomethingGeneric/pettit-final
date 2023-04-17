@@ -33,15 +33,15 @@ n = 0
 
 @app.route('/stream', methods=['POST'])
 def lecamera():
-    global n
-    # Get the frame from the request
-    frame = request.json['frame'].replace("data:image/jpeg;base64,","")
-    # Save the frame to disk or process it as needed
-    img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
-    filename = f"static/uploads/camera/frame-{n}.jpg"
-    img.save(filename)
-    n += 1
     try:
+        global n
+        # Get the frame from the request
+        frame = request.json['frame'].replace("data:image/jpeg;base64,","")
+        # Save the frame to disk or process it as needed
+        img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
+        filename = f"static/uploads/camera/frame-{n}.jpg"
+        img.save(filename)
+        n += 1
         person = DeepFace.analyze(
             img_path=filename
         )[0]
@@ -106,22 +106,24 @@ def camamammamammera():
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    if request.files["file"].filename != "":
-        file = request.files["file"]
-        filename = file.filename
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-        if not filetype.is_image(os.path.join(app.config["UPLOAD_FOLDER"], filename)):
-            resp = make_response(redirect("/"))
-            resp.set_cookie("FAIL", "This thing is not an image: " + filename)
-            os.remove(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            return resp
+    try:
+        if request.files["file"].filename != "":
+            file = request.files["file"]
+            filename = file.filename
+            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            if not filetype.is_image(os.path.join(app.config["UPLOAD_FOLDER"], filename)):
+                resp = make_response(redirect("/"))
+                resp.set_cookie("FAIL", "This thing is not an image: " + filename)
+                os.remove(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                return resp
+            else:
+                return redirect(f"/analyze/{filename}")
         else:
-            return redirect(f"/analyze/{filename}")
-    else:
-        resp = make_response(redirect("/"))
-        resp.set_cookie("OOPSIE", "No file provided")
-        return resp
-
+            resp = make_response(redirect("/"))
+            resp.set_cookie("OOPSIE", "No file provided")
+            return resp
+    except Exception as e:
+       return render_template("fail.html", fail=str(e)) 
 
 @app.route("/analyze/<filename>")
 def show_info(filename):
@@ -187,11 +189,12 @@ def show_info(filename):
                 s_races=likely_races,
             )
         except Exception as e:
-            resp = make_response(redirect("/"))
-            resp.set_cookie("FAIL", "Some issue happened: " + str(e))
             os.remove(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            return resp
+            return render_template("fail.html", fail=str(e))
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    try:
+        app.run(debug=True)
+    except Exception as e:
+        print(str(e))
