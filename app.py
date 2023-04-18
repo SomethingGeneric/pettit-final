@@ -37,16 +37,20 @@ def lecamera(id):
             frame = request.json["frame"].replace("data:image/jpeg;base64,", "")
             # Save the frame to disk or process it as needed
             img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
+
             dp = f"static{os.sep}frames{os.sep}{id}"
+
             if not os.path.exists(dp):
                 os.makedirs(dp, exist_ok=True)
+
             filename = f"static{os.sep}frames{os.sep}{id}{os.sep}frame-{rndstr()}.jpg"
 
             img.save(filename)
+            # print(f"Saved to {filename}")
 
             person = DeepFace.analyze(img_path=filename)[0]
 
-            print(person)
+            # print(person)
             # 'region': {'x': 313, 'y': 220, 'w': 140, 'h': 140}
 
             x = person['region']['x']
@@ -56,17 +60,19 @@ def lecamera(id):
 
             print(f"From DeepFace: {x}, {y} & {w}, {h}")
 
-            x1 = x - (w/2)
-            y1 = y - (h/2)
+            x1 = x
+            y1 = y
 
-            x2 = x + (w/2)
-            y2 = y + (h/2)
+            x2 = x + w
+            y2 = y + h
 
             print(f"Bounding box: {x1},{y1} & {x2},{y2}")
 
             image_obj = Image.open(filename)
             draw = ImageDraw.Draw(image_obj)
-            draw.rectangle((x1, y1, x2, y2), fill=(255,0,0))#, outline=(255,0,0))
+
+            draw.rectangle((x1, y1, x2, y2), fill=None, outline=(255,0,0))
+
             image_obj.save(filename)
 
             age = person["age"]  # normal
