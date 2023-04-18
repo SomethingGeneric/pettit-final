@@ -1,17 +1,17 @@
 from deepface import DeepFace
-from flask import Flask, render_template, request, redirect, url_for, make_response, send_file
-import filetype
+from flask import Flask, render_template, request, redirect, url_for, make_response, send_file, send_from_directory
 import os
-import io
+import io,random,string
 import base64
 from datetime import datetime
 from PIL import Image
 from urllib.parse import quote
 
 app = Flask(__name__)
+#app.config['']
 
-if not os.path.exists("frames"):
-    os.makedirs("frames")
+if not os.path.exists(f"static{os.sep}frames"):
+    os.makedirs(f"static{os.sep}frames", exist_ok=True)
 
 @app.route('/stream', methods=['POST'])
 def lecamera():
@@ -20,7 +20,9 @@ def lecamera():
         frame = request.json['frame'].replace("data:image/jpeg;base64,","")
         # Save the frame to disk or process it as needed
         img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
-        filename = f"frames/frame-{quote(str(datetime.now()))}.jpg"
+        letters = string.ascii_letters
+        RAND = ''.join(random.choice(letters) for i in range(10))
+        filename = f"static{os.sep}frames{os.sep}frame-{RAND}.jpg"
         img.save(filename)
         person = DeepFace.analyze(
             img_path=filename
@@ -68,7 +70,7 @@ def lecamera():
 
         return render_template(
             "result.html",
-            filename=filename.replace("frames/",""),
+            filename=filename,
             age=age,
             main_em=main_emotion,
             main_gender=main_gender,
@@ -85,13 +87,6 @@ def lecamera():
 @app.route("/")
 def camamammamammera():
     return render_template("camera.html")
-
-@app.route("/image/id/<id>")
-def secureish(id):
-    if os.path.exists(f"frames/{id}"):
-        return send_file(f"frames/{id}")
-    else:
-        return ""
 
 if __name__ == "__main__":
     try:
