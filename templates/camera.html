@@ -16,12 +16,12 @@
   <script>
     function hideFail() {
       document.getElementById('failmsg').style.display = 'none';
-      //alert("lol");
     }
 
     window.onload = hideFail;
   </script>
   <script>
+    const my_id = "{{ SESSION }}";
     const video = document.getElementById('video');
     // Get the video stream from the camera
     navigator.mediaDevices.getUserMedia({ video: true })
@@ -37,7 +37,7 @@
           const frame = canvas.toDataURL('image/jpeg', 0.8);
           console.log("Interval trigger");
           // Send the frame to the Flask server using the fetch() method
-          fetch('/stream', {
+          fetch('/stream/' + my_id, {
             method: 'POST',
             body: JSON.stringify({ frame }),
             headers: {

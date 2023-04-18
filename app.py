@@ -13,16 +13,25 @@ app = Flask(__name__)
 if not os.path.exists(f"static{os.sep}frames"):
     os.makedirs(f"static{os.sep}frames", exist_ok=True)
 
-@app.route('/stream', methods=['POST'])
-def lecamera():
+def rndstr():
+    letters = string.ascii_letters
+    RAND = ''.join(random.choice(letters) for i in range(10))
+    return RAND
+
+@app.route('/stream/<id>', methods=['POST'])
+def lecamera(id):
     try:
         # Get the frame from the request
         frame = request.json['frame'].replace("data:image/jpeg;base64,","")
         # Save the frame to disk or process it as needed
         img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
-        letters = string.ascii_letters
-        RAND = ''.join(random.choice(letters) for i in range(10))
-        filename = f"static{os.sep}frames{os.sep}frame-{RAND}.jpg"
+
+        dp = f"static{os.sep}frames{os.sep}{id}"
+        if not os.path.exists(dp):
+            os.makedirs(dp, exist_ok=True)
+
+        filename = f"static{os.sep}frames{os.sep}{id}{os.sep}frame-{rndstr()}.jpg"
+
         img.save(filename)
         person = DeepFace.analyze(
             img_path=filename
@@ -86,7 +95,7 @@ def lecamera():
 
 @app.route("/")
 def camamammamammera():
-    return render_template("camera.html")
+    return render_template("camera.html", SESSION=rndstr())
 
 if __name__ == "__main__":
     try:
