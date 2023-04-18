@@ -17,6 +17,16 @@ import bcrypt
 }
 """
 
+# self.cookies
+"""
+[
+    {
+        "user": <str>,
+        "key": <str>
+    },
+]
+"""
+
 
 class User:
     def __init__(self, id_str=None, usern=None, passw=None, ihistory=None):
@@ -42,6 +52,34 @@ class UsersDatabase:
     def __init__(self):
         if not os.path.exists("db"):
             os.makedirs("db")
+        self.cookies = []
+
+    def expire_cookie(self, user):
+        for data in self.cookies:
+            if data["user"] == user:
+                self.cookies.remove(data)
+                return True
+        return False
+
+    def set_cookie(self, user, key):
+        self.expire_cookie(user)
+        self.cookies.append({"user": user, "key": key})
+
+    def check_cookie(self,untrusted):
+        for data in self.cookies:
+            if data["key"] == untrusted:
+                return True
+        return False
+    
+    def get_cookie_thing(self, untrusted):
+        for data in self.cookies:
+            if data["key"] == untrusted:
+                return data
+        return None
+
+    def get_id_for_session(self, untrusted):
+        data = self.get_cookie_thing(untrusted)
+        return self.find_id_by_username(data['user'])
 
     def commit_user(self, user):
         with open(f"db{os.sep}{user.id}.toml", "w") as f:
@@ -65,6 +103,14 @@ class UsersDatabase:
                 if data["username"] == user:
                     return data["id"]
         return None
+
+    def add_history_to(self, session, new_history):
+        obj = self.get_cookie_thing(session)
+        username = obj["user"]
+        user_id = self.find_id_by_username(username)
+        user_object = self.load_user(user_id)
+        user_object.add_to_history(new_history)
+        self.commit_user(user_object)
 
     def register_user(self, id, user, passw):
 
