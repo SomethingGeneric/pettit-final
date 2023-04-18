@@ -1,28 +1,34 @@
-from deepface import DeepFace
-from flask import Flask, render_template, request, redirect, url_for, make_response, send_file, send_from_directory
+# Stdlib
 import os
-import io,random,string
+import io, random, string
 import base64
-from datetime import datetime
+
+# Pip Packages
 from PIL import Image
-from urllib.parse import quote
+from deepface import DeepFace
+from flask import Flask, render_template, request, make_response, redirect
+
+# Custom
+from user import UsersDatabase
 
 app = Flask(__name__)
-#app.config['']
+db = UsersDatabase()
 
 if not os.path.exists(f"static{os.sep}frames"):
     os.makedirs(f"static{os.sep}frames", exist_ok=True)
 
+
 def rndstr():
     letters = string.ascii_letters
-    RAND = ''.join(random.choice(letters) for i in range(10))
+    RAND = "".join(random.choice(letters) for i in range(10))
     return RAND
 
-@app.route('/stream/<id>', methods=['POST'])
+
+@app.route("/stream/<id>", methods=["POST"])
 def lecamera(id):
     try:
         # Get the frame from the request
-        frame = request.json['frame'].replace("data:image/jpeg;base64,","")
+        frame = request.json["frame"].replace("data:image/jpeg;base64,", "")
         # Save the frame to disk or process it as needed
         img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
 
@@ -33,9 +39,7 @@ def lecamera(id):
         filename = f"static{os.sep}frames{os.sep}{id}{os.sep}frame-{rndstr()}.jpg"
 
         img.save(filename)
-        person = DeepFace.analyze(
-            img_path=filename
-        )[0]
+        person = DeepFace.analyze(img_path=filename)[0]
 
         age = person["age"]  # normal
         main_emotion = person["dominant_emotion"]  # normal
@@ -45,9 +49,7 @@ def lecamera(id):
         emotions = person["emotion"]  # dict
         sorted_emotions = {
             k: v
-            for k, v in sorted(
-                emotions.items(), key=lambda item: item[1], reverse=True
-            )
+            for k, v in sorted(emotions.items(), key=lambda item: item[1], reverse=True)
         }
         clean_emotions = {}
         for k, v in sorted_emotions.items():
@@ -57,9 +59,7 @@ def lecamera(id):
         genders = person["gender"]  # dict
         sorted_genders = {
             k: v
-            for k, v in sorted(
-                genders.items(), key=lambda item: item[1], reverse=True
-            )
+            for k, v in sorted(genders.items(), key=lambda item: item[1], reverse=True)
         }
         likely_genders = {}
         for k, v in sorted_genders.items():
@@ -68,9 +68,7 @@ def lecamera(id):
         races = person["race"]  # dict
         sorted_races = {
             k: v
-            for k, v in sorted(
-                races.items(), key=lambda item: item[1], reverse=True
-            )
+            for k, v in sorted(races.items(), key=lambda item: item[1], reverse=True)
         }
         likely_races = {}
         for k, v in sorted_races.items():
@@ -89,16 +87,57 @@ def lecamera(id):
             s_races=likely_races,
         )
     except Exception as e:
-        #return render_template("fail.html", fail=str(e))
+        # return render_template("fail.html", fail=str(e))
         print(str(e))
         return f"FAIL: {str(e)}"
 
-@app.route("/")
+
+@app.route("/webcam")
 def camamammamammera():
-    return render_template("camera.html", SESSION=rndstr())
+    session = request.cookies.get('goomba')
+    if session:
+        return render_template("camera.html", SESSION=session)
+    else:
+        return render_template("fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>")
+
+@app.route("/", methods=['GET', 'POST'])
+def indexr():
+    if request.method == "GET":
+        fail = request.cookies.get("FAILMSG")
+        warning = request.cookies.get("WARNMSG")
+        success = request.cookies.get("SUCCESSMSG")
+        return render_template('index.html', fail=fail, warning=warning, success=success)
+    else:
+        usern = request.form['usern']
+        passw = request.form['passw']
+
+        if db.auth_by_user(usern, passw):
+            # woo yea
+            resp = make_response(redirect("/webcam"))
+            resp.set_cookie("goomba", rndstr())
+            return resp
+        else:
+            return render_template("fail.html", fail=f"<p>Failed to auth for {usern}. <a href='/'>Go back.</a></p>")
+
+@app.route("/register", methods=['GET', 'POST'])
+def doreg():
+    if request.method == "GET":
+        return render_template('register.html')
+    else:
+        usern = request.form['usern']
+        passw = request.form['passw']
+
+        db.register_user(rndstr(), usern, passw)
+
+        res = make_response(redirect("/"))
+        res.set_cookie("SUCCESSMSG", "Registed a new user: " + usern)
+        return res
 
 if __name__ == "__main__":
     try:
+        import webbrowser
+
+        webbrowser.open("http://127.0.0.1:5000")
         app.run(host="0.0.0.0", debug=True)
     except Exception as e:
         print(str(e))
