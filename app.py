@@ -66,8 +66,8 @@ def lecamera(id):
 
             image_obj = Image.open(filename)
             draw = ImageDraw.Draw(image_obj)
-            draw.rectangle((x1, y1, x2, y2), fill=(255,0,255), outline=(255,0,0))
-            img.save(filename)
+            draw.rectangle((x1, y1, x2, y2), fill=(255,0,0))#, outline=(255,0,0))
+            image_obj.save(filename)
 
             age = person["age"]  # normal
             main_emotion = person["dominant_emotion"]  # normal
