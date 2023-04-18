@@ -47,14 +47,13 @@
             .then((html) => {
               const output_thing = Promise.resolve(html.text());
               output_thing.then((value) => {
-                if (!value.includes("FAIL")) {
+                if (value.includes("FAIL")) {
                   console.log("Fail: " + value);
+                  document.getElementById('failmsg').innerHTML = "<p>" + value + "</p>";
+                  document.getElementById('failmsg').style.display = "block";
+                } else {
                   document.getElementById('content').innerHTML = value;
                   document.getElementById('failmsg').style.display = "none";
-                } else {
-                  console.log("Got result");
-                  document.getElementById('failmsg').innerHTML = "<p>" + value + "</p>";
-                  document.getElementById('failmsg').style.display = "normal";
                 }
               });
             })
