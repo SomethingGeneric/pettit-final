@@ -12,26 +12,23 @@ ________________________________________________________________________________
 # Write Up - David, Matt, Abijah
 
 ## 1. What we chose to do:
-    We chose to make a facial recognition module that takes frames of the users face and proceeds to analyze it and pull what the AI thinks is the dominant emotion, race, and gender. We had originally had a few different plans all regarding to working with the Facial recognition module Deepface.
+We chose to make a facial recognition module that takes frames of the users face and proceeds to analyze it and pull what the AI thinks is the dominant emotion, race, and gender. We had originally had a few different plans all regarding to working with the Facial recognition module Deepface.
 
 ## 2. Why did we choose to do it?
-    Abijah and David are in Dr. Banfill's Surveillence Capitalism class and thought this would be an interesting project for that class. Then, we had also been assigned this final and had wanted to make both work for both finals. So we had enlisted the help of Matt and he had wanted to work with us for this final (and kindly benefit Abijah and Dave in the process).
+Abijah and David are in Dr. Banfill's Surveillence Capitalism class and thought this would be an interesting project for that class. Then, we had also been assigned this final and had wanted to make both work for both finals. So we had enlisted the help of Matt and he had wanted to work with us for this final (and kindly benefit Abijah and Dave in the process).
 
-## 3. Requirements (SHOOOOOOOWWWWW)
+## 3. Requirements
 - Class or Static Methods - **User and Userdatabase Classes in user.py**
 
 - Properties - **User's Name/Pass/History**
     
-- Variable argument lists or key word argument lists
+- Variable argument lists or key word argument lists - **Flask Routing Logic, UserDatabase methods**
     
-- List comprehensions 
+- List/Dictionary comprehensions - **Page generation for analysis output**
    
-- Significant use of a python package - **Deepface mainly 
-as well as the requirements.txt**
+- Significant use of a python package - **Flask, DeepFace, bcrypt, toml**
     
 - File I/O that is not pickle - **toml**
-    
-- Databases - **db**
 
 ## 4. Things we learnt(+ve and -ve)
 
@@ -51,4 +48,4 @@ as well as the requirements.txt**
 
 - Issues using the class requirements to store information about each user. 
 
-- Boundary Boxes :(((((
+- Bounding boxes on the detected face took a while to work.
