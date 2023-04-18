@@ -1,5 +1,6 @@
 # Our stuff
 static/uploads/
+frames/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

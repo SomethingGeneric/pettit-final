@@ -35,7 +35,7 @@
           canvas.height = video.videoHeight;
           canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
           const frame = canvas.toDataURL('image/jpeg', 0.8);
-
+          console.log("Interval trigger");
           // Send the frame to the Flask server using the fetch() method
           fetch('/stream', {
             method: 'POST',
@@ -48,9 +48,11 @@
               const output_thing = Promise.resolve(html.text());
               output_thing.then((value) => {
                 if (!value.includes("FAIL")) {
+                  console.log("Fail: " + value);
                   document.getElementById('content').innerHTML = value;
                   document.getElementById('failmsg').style.display = "none";
                 } else {
+                  console.log("Got result");
                   document.getElementById('failmsg').innerHTML = "<p>" + value + "</p>";
                   document.getElementById('failmsg').style.display = "normal";
                 }
@@ -59,7 +61,7 @@
             .catch(error => {
               console.error('Error uploading frame:', error);
             });
-        }, 10000);
+        }, 5000);
       })
       .catch(error => {
         console.error('Error getting video stream:', error);
