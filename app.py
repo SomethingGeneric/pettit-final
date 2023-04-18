@@ -23,14 +23,19 @@ def rndstr():
     RAND = "".join(random.choice(letters) for i in range(10))
     return RAND
 
+
 def handle_cookies(request):
-    stuff = [request.cookies.get("FAILMSG"), request.cookies.get("WARNMSG"), request.cookies.get("SUCCESSMSG")]
+    stuff = [
+        request.cookies.get("FAILMSG"),
+        request.cookies.get("WARNMSG"),
+        request.cookies.get("SUCCESSMSG"),
+    ]
     return stuff
 
 
 @app.route("/stream/<id>", methods=["POST"])
 def lecamera(id):
-    session = request.cookies.get('goomba')
+    session = request.cookies.get("goomba")
     if db.check_cookie(session):
         try:
             # Get the frame from the request
@@ -53,10 +58,10 @@ def lecamera(id):
             # print(person)
             # 'region': {'x': 313, 'y': 220, 'w': 140, 'h': 140}
 
-            x = person['region']['x']
-            y = person['region']['y']
-            w = person['region']['w']
-            h = person['region']['h']
+            x = person["region"]["x"]
+            y = person["region"]["y"]
+            w = person["region"]["w"]
+            h = person["region"]["h"]
 
             print(f"From DeepFace: {x}, {y} & {w}, {h}")
 
@@ -71,7 +76,7 @@ def lecamera(id):
             image_obj = Image.open(filename)
             draw = ImageDraw.Draw(image_obj)
 
-            draw.rectangle((x1, y1, x2, y2), fill=None, outline=(255,0,0))
+            draw.rectangle((x1, y1, x2, y2), fill=None, outline=(255, 0, 0))
 
             image_obj.save(filename)
 
@@ -83,7 +88,9 @@ def lecamera(id):
             emotions = person["emotion"]  # dict
             sorted_emotions = {
                 k: v
-                for k, v in sorted(emotions.items(), key=lambda item: item[1], reverse=True)
+                for k, v in sorted(
+                    emotions.items(), key=lambda item: item[1], reverse=True
+                )
             }
             clean_emotions = {}
             for k, v in sorted_emotions.items():
@@ -93,7 +100,9 @@ def lecamera(id):
             genders = person["gender"]  # dict
             sorted_genders = {
                 k: v
-                for k, v in sorted(genders.items(), key=lambda item: item[1], reverse=True)
+                for k, v in sorted(
+                    genders.items(), key=lambda item: item[1], reverse=True
+                )
             }
             likely_genders = {}
             for k, v in sorted_genders.items():
@@ -102,7 +111,9 @@ def lecamera(id):
             races = person["race"]  # dict
             sorted_races = {
                 k: v
-                for k, v in sorted(races.items(), key=lambda item: item[1], reverse=True)
+                for k, v in sorted(
+                    races.items(), key=lambda item: item[1], reverse=True
+                )
             }
             likely_races = {}
             for k, v in sorted_races.items():
@@ -114,9 +125,10 @@ def lecamera(id):
                 "main_emotion": main_emotion,
                 "main_gender": main_gender,
                 "main_race": main_race,
-                "cleaned_emotions": clean_emotions,
-                "likely_genders": likely_genders,
-                "likely_races": likely_races
+                "cleaned_emotions": clean_emotions,  # dict
+                "likely_genders": likely_genders,  # dict
+                "likely_races": likely_races,  # dict,
+                "filename": filename,
             }
 
             db.add_history_to(session, all_the_things)
@@ -136,27 +148,52 @@ def lecamera(id):
             print("Error: " + str(e))
             return f"FAIL: {str(e)}"
     else:
-        return render_template("fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>")
+        return render_template(
+            "fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>"
+        )
+
 
 @app.route("/webcam")
 def camamammamammera():
-    session = request.cookies.get('goomba')
+    session = request.cookies.get("goomba")
     if db.check_cookie(session):
-        return render_template("camera.html", SESSION=db.get_id_for_session(session), username=db.get_cookie_thing(session)["user"])
+        return render_template(
+            "camera.html",
+            SESSION=db.get_id_for_session(session),
+            username=db.get_user_for_session(session),
+        )
     else:
-        return render_template("fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>")
+        return render_template(
+            "fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>"
+        )
 
-@app.route("/", methods=['GET', 'POST'])
+
+@app.route("/trends")
+def trendspage():
+    session = request.cookies.get("goomba")
+    if db.check_cookie(session):
+        return db.do_trends_for(db.get_user_for_session(session))
+    else:
+        return render_template(
+            "fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>"
+        )
+
+
+@app.route("/", methods=["GET", "POST"])
 def indexr():
     if request.method == "GET":
         cookies = handle_cookies(request)
-        res = make_response(render_template('index.html', fail=cookies[0], warning=cookies[1], success=cookies[2]))
+        res = make_response(
+            render_template(
+                "index.html", fail=cookies[0], warning=cookies[1], success=cookies[2]
+            )
+        )
         for key in ["FAILMSG", "WARNMSG", "SUCCESSMSG"]:
             res.delete_cookie(key)
         return res
     else:
-        usern = request.form['usern']
-        passw = request.form['passw']
+        usern = request.form["usern"]
+        passw = request.form["passw"]
 
         if db.auth_by_user(usern, passw):
             # woo yea
@@ -166,15 +203,19 @@ def indexr():
             db.set_cookie(usern, token)
             return resp
         else:
-            return render_template("fail.html", fail=f"<p>Failed to auth for {usern}. <a href='/'>Go back.</a></p>")
+            return render_template(
+                "fail.html",
+                fail=f"<p>Failed to auth for {usern}. <a href='/'>Go back.</a></p>",
+            )
 
-@app.route("/register", methods=['GET', 'POST'])
+
+@app.route("/register", methods=["GET", "POST"])
 def doreg():
     if request.method == "GET":
-        return render_template('register.html')
+        return render_template("register.html")
     else:
-        usern = request.form['usern']
-        passw = request.form['passw']
+        usern = request.form["usern"]
+        passw = request.form["passw"]
 
         db.register_user(rndstr(), usern, passw)
 
@@ -182,9 +223,11 @@ def doreg():
         res.set_cookie("SUCCESSMSG", "Registed a new user: " + usern)
         return res
 
+
 if __name__ == "__main__":
     try:
         import webbrowser
+
         webbrowser.open("http://127.0.0.1:5000")
         app.run(host="0.0.0.0", debug=True)
     except Exception as e:

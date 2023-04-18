@@ -4,18 +4,7 @@ import os
 # pip packages
 import toml
 import bcrypt
-
-
-# Idea for new_history:
-"""
-{
-    "frame_url": <string>,
-    "age": <int>,
-    "main_emotion": <string>,
-    ....
-    # so that we can do a like "def generate_avg_age"
-}
-"""
+from flask import render_template
 
 # self.cookies
 """
@@ -65,12 +54,12 @@ class UsersDatabase:
         self.expire_cookie(user)
         self.cookies.append({"user": user, "key": key})
 
-    def check_cookie(self,untrusted):
+    def check_cookie(self, untrusted):
         for data in self.cookies:
             if data["key"] == untrusted:
                 return True
         return False
-    
+
     def get_cookie_thing(self, untrusted):
         for data in self.cookies:
             if data["key"] == untrusted:
@@ -79,7 +68,11 @@ class UsersDatabase:
 
     def get_id_for_session(self, untrusted):
         data = self.get_cookie_thing(untrusted)
-        return self.find_id_by_username(data['user'])
+        return self.find_id_by_username(data["user"])
+
+    def get_user_for_session(self, untrusted):
+        data = self.get_cookie_thing(untrusted)
+        return data["user"]
 
     def commit_user(self, user):
         with open(f"db{os.sep}{user.id}.toml", "w") as f:
@@ -90,7 +83,25 @@ class UsersDatabase:
         if os.path.exists(fn):
             stuff = open(fn).read()
             data = toml.loads(stuff)
-            new = User(data["id"], data["username"], data["password"], data["history"])
+
+            uid = None
+            username = None
+            password = None
+            history = None
+
+            if "id" in data.keys():
+                uid = data["id"]
+
+            if "username" in data.keys():
+                username = data["username"]
+
+            if "password" in data.keys():
+                password = data["password"]
+
+            if "history" in data.keys():
+                history = data["history"]
+
+            new = User(uid, username, password, history)
             return new
         else:
             return None
@@ -113,11 +124,8 @@ class UsersDatabase:
         self.commit_user(user_object)
 
     def register_user(self, id, user, passw):
-
         ptpw = passw
-
         hashed_pw = bcrypt.hashpw(ptpw, bcrypt.gensalt())
-
         new = User(id, user, hashed_pw)
         self.commit_user(new)
 
@@ -133,10 +141,108 @@ class UsersDatabase:
             return self.auth_user(id, attempt)
         return False
 
+    # Idea for history objects
+    """
+    all_the_things = {
+        "age": age,
+        "main_emotion": main_emotion,
+        "main_gender": main_gender,
+        "main_race": main_race,
+        "cleaned_emotions": clean_emotions, # dict
+        "likely_genders": likely_genders, # dict
+        "likely_races": likely_races, # dict,
+        "filename": filename,
+    }
+    """
+
+    def do_trends_for(self, username):
+        user_obj = self.load_user(self.find_id_by_username(username))
+
+        ages_tally = {}
+        all_ages = []  # special since average age is cool imo
+
+        tally_emotions = {}
+
+        tally_genders = {}
+
+        tally_races = {}
+
+        # here #
+
+        all_cleaned_emotions = []
+
+        all_likely_genders = []
+
+        all_likely_races = []
+
+        history_html = ""
+
+        for history in user_obj.history:
+            age = history["age"]
+            if age in ages_tally.keys():
+                ages_tally[age] += 1
+            else:
+                ages_tally[age] = 1
+            all_ages.append(age)
+
+            emotion = history["main_emotion"]
+            if emotion in tally_emotions.keys():
+                tally_emotions[emotion] += 1
+            else:
+                tally_emotions[emotion] = 1
+
+            gender = history["main_gender"]
+            if gender in tally_genders.keys():
+                tally_genders[gender] += 1
+            else:
+                tally_genders[gender] = 1
+
+            race = history["main_race"]
+            if race in tally_races.keys():
+                tally_races[race] += 1
+            else:
+                tally_races[race] = 1
+
+            ##### not using the below for now ######
+            all_cleaned_emotions.append(history["cleaned_emotions"])
+            all_likely_genders.append(history["likely_genders"])
+            all_likely_races.append(history["likely_races"])
+
+            history_html += (
+                render_template(
+                    "result.html",
+                    filename=history["filename"],
+                    age=history["age"],
+                    main_em=history["main_emotion"],
+                    main_gender=history["main_gender"],
+                    main_race=history["main_race"],
+                    s_em=history["cleaned_emotions"],
+                    s_gender=history["likely_genders"],
+                    s_races=history["likely_races"],
+                ) + "<hr/>"
+            )
+
+        final_html = render_template(
+            "trends.html",
+            username=username,
+            history=render_template(
+                "trends_list.html",
+                ages_tally=ages_tally,
+                avg_age=sum(all_ages) / len(all_ages),
+                tally_emotions=tally_emotions,
+                tally_genders=tally_genders,
+                tally_races=tally_races,
+            )
+            + "<hr/><h3>Previous frames</h3>"
+            + history_html,
+        )
+
+        return final_html
+
 
 if __name__ == "__main__":
     db = UsersDatabase()
-    
+
     db.register_user("1", "matt", "TestPassword")
 
     if db.auth_by_user("matt", input("Password for matt: ")):

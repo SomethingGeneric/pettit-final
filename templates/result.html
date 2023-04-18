@@ -10,7 +10,9 @@
     <div class="container">
       <div class="row">
         <div class="col">
-          <a href="/">Go home</a>
+          {% if main %}
+            <a href="/">Go home</a>
+          {% endif %}
           <div class="lead">
             <p><b>Age:</b> {{ age }}</p>
             <p><b>Dominant emotion:</b> {{ main_em.capitalize() }}</p>
