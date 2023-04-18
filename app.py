@@ -1,6 +1,10 @@
+"""Flask server code for the web interface"""
+
 # Stdlib
 import os
-import io, random, string
+import io
+import random
+import string
 import base64
 
 # Pip Packages
@@ -19,22 +23,24 @@ if not os.path.exists(f"static{os.sep}frames"):
 
 
 def rndstr():
+    """Generate a random 10 character string from ascii letters"""
     letters = string.ascii_letters
-    RAND = "".join(random.choice(letters) for i in range(10))
-    return RAND
+    return "".join(random.choice(letters) for i in range(100))
 
 
-def handle_cookies(request):
+def handle_cookies(trequest):
+    """Seperates out any cookies used to pass end-user messages from the input request object"""
     stuff = [
-        request.cookies.get("FAILMSG"),
-        request.cookies.get("WARNMSG"),
-        request.cookies.get("SUCCESSMSG"),
+        trequest.cookies.get("FAILMSG"),
+        trequest.cookies.get("WARNMSG"),
+        trequest.cookies.get("SUCCESSMSG"),
     ]
     return stuff
 
 
 @app.route("/stream/<id>", methods=["POST"])
-def lecamera(id):
+def lecamera(uid):
+    """This endpoint is called by the camera page, and turns an input frame into data."""
     session = request.cookies.get("goomba")
     if db.check_cookie(session):
         try:
@@ -43,12 +49,12 @@ def lecamera(id):
             # Save the frame to disk or process it as needed
             img = Image.open(io.BytesIO(base64.decodebytes(bytes(frame, "utf-8"))))
 
-            dp = f"static{os.sep}frames{os.sep}{id}"
+            data_path = f"static{os.sep}frames{os.sep}{uid}"
 
-            if not os.path.exists(dp):
-                os.makedirs(dp, exist_ok=True)
+            if not os.path.exists(data_path):
+                os.makedirs(data_path, exist_ok=True)
 
-            filename = f"static{os.sep}frames{os.sep}{id}{os.sep}frame-{rndstr()}.jpg"
+            filename = f"static{os.sep}frames{os.sep}{uid}{os.sep}frame-{rndstr()}.jpg"
 
             img.save(filename)
             # print(f"Saved to {filename}")
@@ -58,25 +64,25 @@ def lecamera(id):
             # print(person)
             # 'region': {'x': 313, 'y': 220, 'w': 140, 'h': 140}
 
-            x = person["region"]["x"]
-            y = person["region"]["y"]
-            w = person["region"]["w"]
-            h = person["region"]["h"]
+            region_x = person["region"]["x"]
+            region_y = person["region"]["y"]
+            region_w = person["region"]["w"]
+            region_h = person["region"]["h"]
 
-            print(f"From DeepFace: {x}, {y} & {w}, {h}")
+            print(f"From DeepFace: {region_x}, {region_y} & {region_w}, {region_h}")
 
-            x1 = x
-            y1 = y
+            box_x1 = region_x
+            box_y1 = region_y
 
-            x2 = x + w
-            y2 = y + h
+            box_x2 = region_x + region_w
+            box_y2 = region_y + region_h
 
-            print(f"Bounding box: {x1},{y1} & {x2},{y2}")
+            print(f"Bounding box: ({box_x1},{box_y1}) & ({box_x2},{box_y2})")
 
             image_obj = Image.open(filename)
             draw = ImageDraw.Draw(image_obj)
 
-            draw.rectangle((x1, y1, x2, y2), fill=None, outline=(255, 0, 0))
+            draw.rectangle((box_x1, box_y1, box_x2, box_y2), fill=None, outline=(255, 0, 0))
 
             image_obj.save(filename)
 
@@ -93,9 +99,9 @@ def lecamera(id):
                 )
             }
             clean_emotions = {}
-            for k, v in sorted_emotions.items():
-                if "e-" not in str(v):
-                    clean_emotions[k] = f"{v:.2f}"
+            for k, val in sorted_emotions.items():
+                if "e-" not in str(val):
+                    clean_emotions[k] = f"{val:.2f}"
 
             genders = person["gender"]  # dict
             sorted_genders = {
@@ -105,8 +111,8 @@ def lecamera(id):
                 )
             }
             likely_genders = {}
-            for k, v in sorted_genders.items():
-                likely_genders[k] = f"{v:.2f}"
+            for k, val in sorted_genders.items():
+                likely_genders[k] = f"{val:.2f}"
 
             races = person["race"]  # dict
             sorted_races = {
@@ -116,9 +122,9 @@ def lecamera(id):
                 )
             }
             likely_races = {}
-            for k, v in sorted_races.items():
-                if float(str(v).replace("%", "")) > 1.0:
-                    likely_races[k] = f"{float(str(v).replace('%','')):.2f}"
+            for k, val in sorted_races.items():
+                if float(str(val).replace("%", "")) > 1.0:
+                    likely_races[k] = f"{float(str(val).replace('%','')):.2f}"
 
             all_the_things = {
                 "age": age,
@@ -144,17 +150,18 @@ def lecamera(id):
                 s_gender=likely_genders,
                 s_races=likely_races,
             )
-        except Exception as e:
-            print("Error: " + str(e))
-            return f"FAIL: {str(e)}"
+        except Exception as excep:
+            print("Error: " + str(excep))
+            return f"FAIL: {str(excep)}"
     else:
         return render_template(
-            "fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>"
+            "fail.html", fail="<p>Please sign in first. <a href='/'>Go back.</a></p>"
         )
 
 
 @app.route("/webcam")
-def camamammamammera():
+def webcamera():
+    """Returns the portal page that accesses the browser's camera"""
     session = request.cookies.get("goomba")
     if db.check_cookie(session):
         return render_template(
@@ -164,23 +171,25 @@ def camamammamammera():
         )
     else:
         return render_template(
-            "fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>"
+            "fail.html", fail="<p>Please sign in first. <a href='/'>Go back.</a></p>"
         )
 
 
 @app.route("/trends")
 def trendspage():
+    """Create a page with the history of analysis of the user"""
     session = request.cookies.get("goomba")
     if db.check_cookie(session):
         return db.do_trends_for(db.get_user_for_session(session))
     else:
         return render_template(
-            "fail.html", fail=f"<p>Please sign in first. <a href='/'>Go back.</a></p>"
+            "fail.html", fail="<p>Please sign in first. <a href='/'>Go back.</a></p>"
         )
 
 
 @app.route("/", methods=["GET", "POST"])
 def indexr():
+    """Return the main page, or process a sign in event"""
     if request.method == "GET":
         cookies = handle_cookies(request)
         res = make_response(
@@ -211,6 +220,7 @@ def indexr():
 
 @app.route("/register", methods=["GET", "POST"])
 def doreg():
+    """Return the registration form, or process a new account"""
     if request.method == "GET":
         return render_template("register.html")
     else:
@@ -227,7 +237,6 @@ def doreg():
 if __name__ == "__main__":
     try:
         import webbrowser
-
         webbrowser.open("http://127.0.0.1:5000")
         app.run(host="0.0.0.0", debug=True)
     except Exception as e:

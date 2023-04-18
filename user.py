@@ -6,30 +6,21 @@ import toml
 import bcrypt
 from flask import render_template
 
-# self.cookies
-"""
-[
-    {
-        "user": <str>,
-        "key": <str>
-    },
-]
-"""
-
-
 class User:
+    """Represents a user, with all of the attributes needed, and analysis history"""
     def __init__(self, id_str=None, usern=None, passw=None, ihistory=None):
-        self.id = id_str
+        self.uid = id_str
         self.username = usern
         self.passw = passw
         self.history = ihistory if ihistory is not None else []
 
     def add_to_history(self, new_history):
+        """Store a given history dict object for later tallying"""
         self.history.append(new_history)
 
     def __str__(self):
         all_my_stuff = {
-            "id": self.id,
+            "id": self.uid,
             "username": self.username,
             "password": self.passw,
             "history": self.history,
@@ -38,12 +29,14 @@ class User:
 
 
 class UsersDatabase:
+    """Various auxiliary functions for operating on users and creating pages"""
     def __init__(self):
         if not os.path.exists("db"):
             os.makedirs("db")
         self.cookies = []
 
     def expire_cookie(self, user):
+        """Remove a given cookie for a user by name"""
         for data in self.cookies:
             if data["user"] == user:
                 self.cookies.remove(data)
@@ -51,37 +44,44 @@ class UsersDatabase:
         return False
 
     def set_cookie(self, user, key):
+        """Set an authentication cookie for a user by name"""
         self.expire_cookie(user)
         self.cookies.append({"user": user, "key": key})
 
     def check_cookie(self, untrusted):
+        """Check if a string is a valid cookie"""
         for data in self.cookies:
             if data["key"] == untrusted:
                 return True
         return False
 
     def get_cookie_thing(self, untrusted):
+        """Return a cookie dict object by key string value"""
         for data in self.cookies:
             if data["key"] == untrusted:
                 return data
         return None
 
     def get_id_for_session(self, untrusted):
+        """Return a UID for a given session cookie, if there is one"""
         data = self.get_cookie_thing(untrusted)
         return self.find_id_by_username(data["user"])
 
     def get_user_for_session(self, untrusted):
+        """Return the username of a given session cookie"""
         data = self.get_cookie_thing(untrusted)
         return data["user"]
 
     def commit_user(self, user):
-        with open(f"db{os.sep}{user.id}.toml", "w") as f:
+        """Save a given user object to disk, using toml"""
+        with open(f"db{os.sep}{user.id}.toml", "w", encoding='utf-8') as f:
             f.write(str(user))
 
     def load_user(self, user_id):
-        fn = f"db{os.sep}{user_id}.toml"
-        if os.path.exists(fn):
-            stuff = open(fn).read()
+        """Load a user object from disk by user id"""
+        filename = f"db{os.sep}{user_id}.toml"
+        if os.path.exists(filename):
+            stuff = open(filename, encoding='utf-8').read()
             data = toml.loads(stuff)
 
             uid = None
@@ -103,19 +103,20 @@ class UsersDatabase:
 
             new = User(uid, username, password, history)
             return new
-        else:
-            return None
+        return None
 
     def find_id_by_username(self, user):
-        for f in os.listdir("db"):
-            if ".toml" in f:
-                stuff = open(f"db{os.sep}{f}").read()
+        """Find the user id for a given username"""
+        for filename in os.listdir("db"):
+            if ".toml" in filename:
+                stuff = open(f"db{os.sep}{filename}", encoding='utf-8').read()
                 data = toml.loads(stuff)
                 if data["username"] == user:
                     return data["id"]
         return None
 
     def add_history_to(self, session, new_history):
+        """Add a history object to a user's history by session cookie"""
         obj = self.get_cookie_thing(session)
         username = obj["user"]
         user_id = self.find_id_by_username(username)
@@ -123,39 +124,29 @@ class UsersDatabase:
         user_object.add_to_history(new_history)
         self.commit_user(user_object)
 
-    def register_user(self, id, user, passw):
+    def register_user(self, uid, user, passw):
+        """Register a new user account, with specified details"""
         ptpw = passw
         hashed_pw = bcrypt.hashpw(ptpw, bcrypt.gensalt())
-        new = User(id, user, hashed_pw)
+        new = User(uid, user, hashed_pw)
         self.commit_user(new)
 
-    def auth_user(self, id, attempt):
-        user = self.load_user(id)
+    def auth_user(self, uid, attempt):
+        """Try to authenticate a user with given id by password"""
+        user = self.load_user(uid)
         if user:
             return bcrypt.checkpw(attempt, user.passw)
         return False
 
-    def auth_by_user(self, un, attempt):
-        id = self.find_id_by_username(un)
-        if id:
-            return self.auth_user(id, attempt)
+    def auth_by_user(self, username, attempt):
+        """Authenticate a user by username with password"""
+        uid = self.find_id_by_username(username)
+        if uid:
+            return self.auth_user(uid, attempt)
         return False
 
-    # Idea for history objects
-    """
-    all_the_things = {
-        "age": age,
-        "main_emotion": main_emotion,
-        "main_gender": main_gender,
-        "main_race": main_race,
-        "cleaned_emotions": clean_emotions, # dict
-        "likely_genders": likely_genders, # dict
-        "likely_races": likely_races, # dict,
-        "filename": filename,
-    }
-    """
-
     def do_trends_for(self, username):
+        """Generate a trends page for the given username"""
         user_obj = self.load_user(self.find_id_by_username(username))
 
         ages_tally = {}
@@ -219,7 +210,8 @@ class UsersDatabase:
                     s_em=history["cleaned_emotions"],
                     s_gender=history["likely_genders"],
                     s_races=history["likely_races"],
-                ) + "<hr/>"
+                )
+                + "<hr/>"
             )
 
         final_html = render_template(
