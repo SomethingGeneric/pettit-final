@@ -74,7 +74,7 @@ class UsersDatabase:
 
     def commit_user(self, user):
         """Save a given user object to disk, using toml"""
-        with open(f"db{os.sep}{user.id}.toml", "w", encoding='utf-8') as f:
+        with open(f"db{os.sep}{user.uid}.toml", "w", encoding='utf-8') as f:
             f.write(str(user))
 
     def load_user(self, user_id):
