@@ -9,9 +9,8 @@ Reproduce this assignment and provide a copy to another member of academic
 staff; and/or Communicate a copy of this assignment to a plagiarism checking
 service (which may then retain a copy of this assignment on its database for
 the purpose of future plagiarism checking)
-"""
 
-"""Flask server code for the web interface"""
+Flask server code for the web interface"""
 
 # Stdlib
 import os
