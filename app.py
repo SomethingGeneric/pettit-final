@@ -1,4 +1,4 @@
-```
+"""
 Authors: Matt Compton, Abijah Buttendorf, and David Thomsen
 Class: CSI-260
 Professor: Sarah Pettitt
@@ -9,7 +9,7 @@ Reproduce this assignment and provide a copy to another member of academic
 staff; and/or Communicate a copy of this assignment to a plagiarism checking
 service (which may then retain a copy of this assignment on its database for
 the purpose of future plagiarism checking)
-```
+"""
 
 """Flask server code for the web interface"""
 
@@ -51,7 +51,7 @@ def handle_cookies(trequest):
     return stuff
 
 
-@app.route("/stream/<id>", methods=["POST"])
+@app.route("/stream/<uid>", methods=["POST"])
 def lecamera(uid):
     """This endpoint is called by the camera page, and turns an input frame into data."""
     session = request.cookies.get("goomba")
